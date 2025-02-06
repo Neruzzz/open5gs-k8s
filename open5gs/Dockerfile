@@ -38,9 +38,17 @@ RUN apt-get update && \
 
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs
 
+# # Get open5gs code and install
+# RUN git clone --recursive https://github.com/open5gs/open5gs && cd open5gs && \
+#     meson build --prefix=`pwd`/install && \
+#     ninja -C build && cd build && ninja install
+
+
 # Get open5gs code and install
 RUN git clone --recursive https://github.com/open5gs/open5gs && cd open5gs && \
-    git checkout v2.6.1 && meson build --prefix=`pwd`/install && \
-    ninja -C build && cd build && ninja install
+git checkout v2.6.6 && meson build --prefix=`pwd`/install && \
+ninja -C build && cd build && ninja install && \
+mkdir -p /open5gs/install/include
+
 
 CMD ["sh", "-c", "tail -f /dev/null"]

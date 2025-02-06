@@ -1,18 +1,16 @@
-# Default values for open5gs-epc-helm.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# This is a helm chart for a distributed deployment of Open5GS and UERANSIM divided in Cloud and Edge nodes.
 
-# open5gs
+# Open5gs
 open5gs:
   image:
-    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-open5gs
-    tag: "latest"
-    pullPolicy: IfNotPresent
+    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-open5gs-linux/amd64
+    tag: "2.6.6"
+    pullPolicy: Always
 
 # Open5gs webui
 webui:
   image:
-    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-webui
+    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-webui-linux/amd64
     tag: "latest"
     pullPolicy: IfNotPresent
   service:
@@ -22,20 +20,27 @@ webui:
     node_port: 30080
   replicas: 1
   node_selector: 
-    null
+    node: cloud
+
+# UERANSIM
+ueransim:
+  image:
+    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-ueransim-linux/amd64
+    tag: "3.2.6"
+    pullPolicy: Always
 
 # mongodb
 mongodb:  
   image:
     repository: mongo
-    tag: "latest"  
+    tag: "4.0"
     pullPolicy: Always
   container_port: 27017
   service:  
     port: 27017
     target_port: 27017
   node_selector: 
-    null
+    node: cloud
 
 
 # AMF Deployment, Service and ConfigMap
@@ -58,13 +63,14 @@ amf:
     sbi: 80
     metrics: 9090
   node_selector:
-    null
+    node: cloud
   configuration:
-    mcc: '001'
-    mnc: '01'
+    mcc: '999'
+    mnc: '70'
     tac: '100'
     slice_sst_sd_list:
       - sst: 1
+        sd: 000001
     t3512: 540
     metrics:
       enabled: True
@@ -81,7 +87,7 @@ ausf:
   container_port:
     sbi: 80
   node_selector:
-    null
+    node: cloud
 
 # BSF Deployment, Service and ConfigMap
 bsf:
@@ -93,7 +99,7 @@ bsf:
   container_port:
     sbi: 80
   node_selector:
-    null
+    node: cloud
 
 # NRF Deployment, Service and ConfigMap
 nrf:
@@ -105,7 +111,7 @@ nrf:
   container_port:
     sbi: 80
   node_selector: 
-    null
+    node: cloud
 
 # NSSF Deployment, Service and ConfigMap
 nssf:
@@ -117,13 +123,14 @@ nssf:
   container_port:
     sbi: 80
   node_selector: 
-    null
+    node: cloud
   configuration:
     nsi_list:
       - addr: nrf-svc
         port: 80
         s_nssai:
           sst: 1
+          sd: 000001
 
 # PCF Deployment, Service and ConfigMap
 pcf:
@@ -135,7 +142,7 @@ pcf:
   container_port:
     sbi: 80
   node_selector:
-    null
+    node: cloud
 
 # UDM Deployment, Service and ConfigMap
 udm:
@@ -147,7 +154,7 @@ udm:
   container_port:
     sbi: 80
   node_selector: 
-    null
+    node: cloud
   configuration:
     hnet: 
       enabled: False
@@ -162,7 +169,7 @@ udr:
   container_port:
     sbi: 80
   node_selector: 
-    null
+    node: cloud
 
 # SMF Deployment, Service and ConfigMap
 smf:
@@ -182,7 +189,7 @@ smf:
     sbi: 80
     metrics: 9090
   node_selector:
-    null
+    node: cloud
   configuration:
     mtu: 1400
     dns_list:
@@ -218,21 +225,21 @@ upf:
       enabled: True
       type: NodePort
     loadbalancer:
-      enabled: False
+      enabled: True
       type: LoadBalancer
-      loadBalancerIP: xxx.xxx.xxx.xxx  # metalLB pool range: 10.201.0.11-12
+      loadBalancerIP: 10.201.0.11  # metalLB pool range: 10.201.0.11-12
   replicas: 1
   container_port:
     gtpu: 2152
     pfcp: 8805
-  # default location for UPF in the cloud
+  # default location for UPF in the 
   node_selector:
-    null
+    node: cloud
   # if distributed_upf is enabled then the UPF will be located in the edge
   distributed_upf: 
-    enabled: False
+    enabled: false
     node_selector: 
-      5g-node: "edge-node"
+      node: cloud
   configuration:
     subnet_list:
       - addr: 10.45.0.1/16
@@ -245,16 +252,58 @@ upf:
        - name: smf-pfcp-svc
          port: 8805
 
+
+
+# UERANSIM
+# gNB Deployment, Service and ConfigMap
+gnb:
+  service:
+    ngap:
+      port: 38412
+      target_port: 38412
+    gtp:
+      port: 2152
+      target_port: 2152
+  replicas: 1
+  container_port:
+    ngap: 38412
+    gtp: 2152
+  configuration:
+    mcc: "901"
+    mnc: "70"
+    nci: "0x000000010"
+    idLength: 32
+    tac: 1
+    linkIp: "127.0.0.1"
+    ngapIp: "127.0.0.1"
+    gtpIp: "127.0.0.1"
+    amfConfigs:
+      - address: "127.0.0.5"
+        port: 38412
+    slices:
+      - sst: 1
+        sd: "000001"
+      # - sst: 1
+      #   sd: "000002"
+    ignoreStreamIds: true
+  node_selector:
+    node: cloud
+
+
+# UE Deployment, Service and ConfigMap
+
+
+
 # General configuration
 global_config:
   sbi:
     advertise: false
   host:
-    interface: eno1
+    interface: eth0
   db_uri: mongodb://mongodb-svc:27017/open5gs
   imagePullSecret:
     enabled: True
-    name: open5gs-project-secret
+    name: regcred
     # log level can be set with none, fatal, error, warn, info, debug, trace
   logs:
     enabled: False

@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gnb-ngap-svc
+  labels:
+    nf-type: gnb
+spec:
+  selector:
+    nf-type: gnb
+  ports:
+    - name: ngap
+      protocol: SCTP
+      port: {{ .Values.gnb.service.ngap.port }}
+      targetPort: {{ .Values.gnb.service.ngap.target_port }}
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: gnb-gtp-svc
+  labels:
+    nf-type: gnb
+spec:
+  selector:
+    nf-type: gnb
+  ports:
+    - name: gtpu
+      protocol: UDP
+      port: {{ .Values.gnb.service.gtp.port }}
+      targetPort: {{ .Values.gnb.service.gtp.target_port }}
+  type: ClusterIP
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gnb-depl
+  labels:
+    nf-type: gnb
+spec:
+  replicas: {{ .Values.gnb.replicas }}
+  selector:
+    matchLabels:
+      nf-type: gnb
+  template:
+    metadata:
+      labels:
+        nf-type: gnb
+    spec:
+      containers:
+        - name: gnb
+          image: "{{ .Values.ueransim.image.repository }}:{{ .Values.ueransim.image.tag }}"
+          imagePullPolicy: {{ .Values.ueransim.image.pullPolicy }}
+          command: ["/bin/bash"]
+          args: ["-c", "./nr-gnb -c /ueransim/config-map/gnb.yaml"]
+          ports:
+            - name: ngap
+              containerPort: {{ .Values.gnb.container_port.ngap }}
+              protocol: SCTP
+            - name: gtp
+              containerPort: {{ .Values.gnb.container_port.gtp }}
+              protocol: UDP
+          volumeMounts:
+            - name: gnb-cmap
+              mountPath: /ueransim/config-map/gnb.yaml
+              subPath: "gnb.yaml"
+      {{- if .Values.global_config.imagePullSecret.enabled }}
+      imagePullSecrets:
+        - name: "{{ .Values.global_config.imagePullSecret.name }}"
+      {{- end }}
+      volumes:
+        - name: gnb-cmap
+          configMap:
+            name: gnb-cmap
+      nodeSelector:
+        {{- .Values.gnb.node_selector | toYaml | nindent 8 }}
