@@ -257,6 +257,7 @@ upf:
 # UERANSIM
 # gNB Deployment, Service and ConfigMap
 gnb:
+  enabled: false
   service:
     ngap:
       port: 38412
@@ -269,16 +270,16 @@ gnb:
     ngap: 38412
     gtp: 2152
   configuration:
-    mcc: "901"
+    mcc: "999"
     mnc: "70"
     nci: "0x000000010"
     idLength: 32
-    tac: 1
-    linkIp: "127.0.0.1"
-    ngapIp: "127.0.0.1"
-    gtpIp: "127.0.0.1"
+    tac: 100
+    linkIp: "0.0.0.0"
+    ngapIp: "0.0.0.0"
+    gtpIp: "0.0.0.0"
     amfConfigs:
-      - address: "127.0.0.5"
+      - address: "amf-ngap-svc.default.svc.cluster.local"
         port: 38412
     slices:
       - sst: 1
@@ -288,9 +289,6 @@ gnb:
     ignoreStreamIds: true
   node_selector:
     node: cloud
-
-
-# UE Deployment, Service and ConfigMap
 
 
 

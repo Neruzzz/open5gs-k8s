@@ -1,0 +1,318 @@
+# This is a helm chart for a distributed deployment of Open5GS and UERANSIM divided in Cloud and Edge nodes.
+
+# Open5gs
+open5gs:
+  image:
+    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-open5gs-linux/amd64
+    tag: "2.6.6"
+    pullPolicy: Always
+
+# Open5gs webui
+webui:
+  image:
+    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-webui-linux/amd64
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 3000
+    target_port: 3000
+    node_port: 30080
+  replicas: 1
+  node_selector: 
+    node: cloud
+
+# UERANSIM
+ueransim:
+  image:
+    repository: registry.gitlab.bsc.es/ppc/software/open5gs/kubernetes-ueransim-linux/amd64
+    tag: "3.2.6"
+    pullPolicy: Always
+
+# mongodb
+mongodb:  
+  image:
+    repository: mongo
+    tag: "4.0"
+    pullPolicy: Always
+  container_port: 27017
+  service:  
+    port: 27017
+    target_port: 27017
+  node_selector: 
+    node: cloud
+
+
+# AMF Deployment, Service and ConfigMap
+amf:
+  service:
+    ngap: 
+      type: NodePort
+      port: 38412
+      target_port: ngap
+      node_port: 30412
+    sbi:
+      port: 80
+      target_port: sbi
+    metrics:
+      port: 9090
+      target_port: metrics
+  replicas: 1
+  container_port:
+    ngap: 38412
+    sbi: 80
+    metrics: 9090
+  node_selector:
+    node: cloud
+  configuration:
+    mcc: '999'
+    mnc: '70'
+    tac: '100'
+    slice_sst_sd_list:
+      - sst: 1
+        sd: 000001
+    t3512: 540
+    metrics:
+      enabled: True
+      interval: "5s"
+
+
+# AUSF Deployment, Service and ConfigMap
+ausf:
+  service:
+    sbi:
+      port: 80
+      target_port: 80
+  replicas: 1
+  container_port:
+    sbi: 80
+  node_selector:
+    node: cloud
+
+# BSF Deployment, Service and ConfigMap
+bsf:
+  service:
+    sbi:
+      port: 80
+      target_port: 80
+  replicas: 1
+  container_port:
+    sbi: 80
+  node_selector:
+    node: cloud
+
+# NRF Deployment, Service and ConfigMap
+nrf:
+  service:
+    sbi:
+      port: 80
+      target_port: 80
+  replicas: 1
+  container_port:
+    sbi: 80
+  node_selector: 
+    node: cloud
+
+# NSSF Deployment, Service and ConfigMap
+nssf:
+  service:
+    sbi:
+      port: 80
+      target_port: 80
+  replicas: 1
+  container_port:
+    sbi: 80
+  node_selector: 
+    node: cloud
+  configuration:
+    nsi_list:
+      - addr: nrf-svc
+        port: 80
+        s_nssai:
+          sst: 1
+          sd: 000001
+
+# PCF Deployment, Service and ConfigMap
+pcf:
+  service:
+    sbi:
+      port: 80
+      target_port: 80
+  replicas: 1
+  container_port:
+    sbi: 80
+  node_selector:
+    node: cloud
+
+# UDM Deployment, Service and ConfigMap
+udm:
+  service:
+    sbi:
+      port: 80
+      target_port: 80
+  replicas: 1
+  container_port:
+    sbi: 80
+  node_selector: 
+    node: cloud
+  configuration:
+    hnet: 
+      enabled: False
+
+# UDR Deployment, Service and ConfigMap
+udr:
+  service:
+    sbi:
+      port: 80
+      target_port: 80
+  replicas: 1
+  container_port:
+    sbi: 80
+  node_selector: 
+    node: cloud
+
+# SMF Deployment, Service and ConfigMap
+smf:
+  service:
+    pfcp: 
+      port: 8805
+      target_port: 8805
+    sbi:
+      port: 80
+      target_port: 80
+    metrics:
+      port: 9090
+      target_port: 9090
+  replicas: 1
+  container_port:
+    pfcp: 8805
+    sbi: 80
+    metrics: 9090
+  node_selector:
+    node: cloud
+  configuration:
+    mtu: 1400
+    dns_list:
+      - 8.8.8.8
+      - 8.8.4.4 
+    subnet_list:
+      - addr: 10.45.0.1/16
+        dnn: internet
+#      - addr: 10.46.0.1/16
+#        dnn: internet2
+    pfcp_upf_connection_list:
+      - name: upf-pfcp-svc
+        port: 8805
+#      - name: upf-pfcp-svc-2
+#        port: 8805
+    metrics:
+      enabled: True
+      interval: "5s"
+
+# UPF Deployment, Service and ConfigMap
+upf:
+  service:
+    gtpu: 
+      name: "upf-gtpu-svc"
+      port: 2152
+      target_port: 2152
+      node_port: 32152
+    pfcp:
+      name: "upf-pfcp-svc"
+      port: 8805
+      target_port: 8805
+    nodeport:
+      enabled: True
+      type: NodePort
+    loadbalancer:
+      enabled: True
+      type: LoadBalancer
+      loadBalancerIP: 10.201.0.11  # metalLB pool range: 10.201.0.11-12
+  replicas: 1
+  container_port:
+    gtpu: 2152
+    pfcp: 8805
+  # default location for UPF in the 
+  node_selector:
+    node: cloud
+  # if distributed_upf is enabled then the UPF will be located in the edge
+  distributed_upf: 
+    enabled: false
+    node_selector: 
+      node: cloud
+  configuration:
+    subnet_list:
+      - addr: 10.45.0.1/16
+        dnn: internet
+        dev: ogstun0
+#      - addr: 10.46.0.1/16
+#        dnn: ims
+#        dev: ogstun1
+    pfcp_smf_connection_list:
+       - name: smf-pfcp-svc
+         port: 8805
+
+
+
+# UERANSIM
+# gNB Deployment, Service and ConfigMap
+gnb:
+  enabled: false
+  service:
+    ngap:
+      port: 38412
+      target_port: 38412
+    gtp:
+      port: 2152
+      target_port: 2152
+  replicas: 1
+  container_port:
+    ngap: 38412
+    gtp: 2152
+  configuration:
+    mcc: "999"
+    mnc: "70"
+    nci: "0x000000010"
+    idLength: 32
+    tac: 100
+    linkIp: "0.0.0.0"
+    ngapIp: "0.0.0.0"
+    gtpIp: "0.0.0.0"
+    amfConfigs:
+      - address: "amf-ngap-svc.default.svc.cluster.local"
+        port: 38412
+    slices:
+      - sst: 1
+        sd: "000001"
+      # - sst: 1
+      #   sd: "000002"
+    ignoreStreamIds: true
+  node_selector:
+    node: cloud
+
+
+# UE Deployment, Service and ConfigMap
+
+
+
+# General configuration
+global_config:
+  sbi:
+    advertise: false
+  host:
+    interface: eth0
+  db_uri: mongodb://mongodb-svc:27017/open5gs
+  imagePullSecret:
+    enabled: True
+    name: regcred
+    # log level can be set with none, fatal, error, warn, info, debug, trace
+  logs:
+    enabled: False
+    log_level: debug 
+  monitoring:
+    prometheus:
+      release:
+        name: "prometheus-5g"
+  # version 2.6.1 feature
+  no_tls: 
+    enabled: True
