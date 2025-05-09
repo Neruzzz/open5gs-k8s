@@ -84,7 +84,7 @@ This will build and push:
 This section provides a detailed explanation of the configurable parameters available in the `values.yaml` file, focusing on the **cloud deployment**.
 
 
-### 🔧 Global Parameters (`global_config`)
+### 🔧 Global parameters (`global_config`)
 
 ```yaml
 global_config:
@@ -109,7 +109,7 @@ global_config:
 
 
 
-### 📦 Component Images and Metadata
+### 📦 Component images and metadata
 
 Common image configuration shared by several components:
 
@@ -292,7 +292,7 @@ upf:
 
 
 
-### 🏗️ gNB - Simulated Radio Access Node
+### 🏗️ gNB - Simulated RAN
 
 ```yaml
 gnb:
@@ -330,7 +330,7 @@ gnb:
 
 
 
-### 📱 UE - Simulated User Equipment
+### 📱 UE - Simulated user equipment
 
 ```yaml
 ue:
@@ -387,7 +387,7 @@ ue:
 
 
 
-### 🧩 Other Core Services
+### 🧩 Other core services
 
 The following services share nearly identical structure and config:
 
