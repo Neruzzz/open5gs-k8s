@@ -8,7 +8,7 @@ Currently, only the **Cloud deployment** has been functionally tested. Multi-clu
 
 ---
 
-## 📂 Project Structure
+## 📂 Project structure
 
 * `charts/cloud/` and `charts/edge/`:
 
@@ -34,7 +34,7 @@ Currently, only the **Cloud deployment** has been functionally tested. Multi-clu
 
 ---
 
-## 💡 Open5GS Components Overview
+## 💡 Open5GS components overview
 
 | Component | Role                                                 |
 | --------- | ---------------------------------------------------- |
@@ -56,7 +56,7 @@ Currently, only the **Cloud deployment** has been functionally tested. Multi-clu
 
 ---
 
-## 🔧 Build and Push Docker Images
+## 🔧 Build and push Docker images
 
 To build and push Docker images, use the provided `Makefile`.
 
@@ -90,7 +90,7 @@ This will build and push:
 curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 ```
 
-### 2. Access Your Kubernetes Cluster
+### 2. Access your Kubernetes cluster
 
 Make sure you have the correct kubeconfig set:
 
