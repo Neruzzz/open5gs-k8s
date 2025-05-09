@@ -55,6 +55,8 @@ apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
 kind: Deployment
 metadata:
   name: amf-depl
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/ue-cmap.yaml") . | sha256sum }}
   labels:
     nf-type: amf
 spec:

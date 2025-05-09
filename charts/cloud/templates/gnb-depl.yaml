@@ -38,6 +38,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gnb-depl
+  annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/gnb-cmap.yaml") . | sha256sum }}
   labels:
     nf-type: gnb
 spec:
@@ -56,6 +58,9 @@ spec:
           imagePullPolicy: {{ .Values.ueransim.image.pullPolicy }}
           command: ["/bin/bash"]
           args: ["-c", "./nr-gnb -c /ueransim/config-map/gnb.yaml"]
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
           ports:
             - name: ngap
               containerPort: {{ .Values.gnb.container_port.ngap }}

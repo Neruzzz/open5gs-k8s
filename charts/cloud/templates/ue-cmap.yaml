@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ue-cmap
+  labels:
+    nf-type: ue
+data:
+  ue.yaml: |
+    supi: {{ .Values.ue.configuration.supi }}
+    mcc: {{ .Values.ue.configuration.mcc }}
+    mnc: {{ .Values.ue.configuration.mnc }}
+    protectionScheme: 0
+    homeNetworkPublicKey: '5a8d38864820197c3394b92613b20b91633cbd897119273bf8e4a6f4eec0a650'
+    homeNetworkPublicKeyId: 1
+    routingIndicator: '0000'
+
+    key: {{ .Values.ue.configuration.key }}
+    op: {{ .Values.ue.configuration.op }}
+    opType: {{ .Values.ue.configuration.opType }}
+    amf: {{ .Values.ue.configuration.amf }}
+    imei: {{ .Values.ue.configuration.imei }}
+    imeiSv: {{ .Values.ue.configuration.imeiSv }}
+
+    # Connection to gNB
+    gnbSearchList:
+    {{- range .Values.ue.configuration.gnbSearchList }}
+      - {{ . }}
+    {{- end }}
+
+
+    # UAC Access Identities Configuration
+    uacAic:
+      mps: {{ .Values.ue.configuration.uacAic.mps }}
+      mcs: {{ .Values.ue.configuration.uacAic.mcs }}
+
+    # UAC Access Control Class
+    uacAcc:
+      normalClass: {{ .Values.ue.configuration.uacAcc.normalClass }}
+      class11: {{ .Values.ue.configuration.uacAcc.class11 }}
+      class12: {{ .Values.ue.configuration.uacAcc.class12 }}
+      class13: {{ .Values.ue.configuration.uacAcc.class13 }}
+      class14: {{ .Values.ue.configuration.uacAcc.class14 }}
+      class15: {{ .Values.ue.configuration.uacAcc.class15 }}
+
+    # Initial PDU sessions to be established
+    sessions:
+    {{- range .Values.ue.configuration.sessions }}
+      - type: {{ .type }}
+        apn: {{ .apn }}
+        slice:
+          sst: {{ .slice.sst }}
+          {{- if .slice.sd }}
+          sd: {{ .slice.sd }}
+          {{- end }}
+    {{- end }}
+
+    # Configured NSSAI for this UE by HPLMN
+    configurednssai:
+    {{- range .Values.ue.configuration.configurednssai }}
+      - sst: {{ .sst }}
+        {{- if .sd }}
+        sd: {{ .sd }}
+        {{- end }}
+    {{- end }}
+
+    # Default Configured NSSAI for this UE
+    defaultnssai:
+    {{- range .Values.ue.configuration.defaultnssai }}
+      - sst: {{ .sst }}
+        {{- if .sd }}
+        sd: {{ .sd }}
+        {{- end }}
+    {{- end }}
+
+    # Supported integrity algorithms by this UE
+    integrity:
+      IA1: {{ .Values.ue.configuration.integrity.IA1 }}
+      IA2: {{ .Values.ue.configuration.integrity.IA2 }}
+      IA3: {{ .Values.ue.configuration.integrity.IA3 }}
+
+    # Supported encryption algorithms by this UE
+    ciphering:
+      EA1: {{ .Values.ue.configuration.ciphering.EA1 }}
+      EA2: {{ .Values.ue.configuration.ciphering.EA2 }}
+      EA3: {{ .Values.ue.configuration.ciphering.EA3 }}
+
+    # Integrity protection maximum data rate for user plane
+    integrityMaxRate:
+      uplink: {{ .Values.ue.configuration.integrityMaxRate.uplink }}
+      downlink: {{ .Values.ue.configuration.integrityMaxRate.downlink }}

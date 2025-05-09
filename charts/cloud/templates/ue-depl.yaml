@@ -1,0 +1,38 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: ue-depl
+  labels:
+    nf-type: ue
+spec:
+  replicas: {{ .Values.ue.replicas }}
+  selector:
+    matchLabels:
+      nf-type: ue
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/ue-cmap.yaml") . | sha256sum }}
+      labels:
+        nf-type: ue
+    spec:    
+      containers:
+        - name: ue
+          image: "{{ .Values.ueransim.image.repository }}:{{ .Values.ueransim.image.tag }}"
+          imagePullPolicy: {{ .Values.open5gs.image.pullPolicy }}
+          command: ["/bin/sh"]
+          args: ["-c", "./nr-ue -c /ueransim/config-map/ue.yaml"]
+          volumeMounts:
+          - name: ue-cmap
+            mountPath: /ueransim/config-map/ue.yaml
+            subPath: "ue.yaml"
+      {{- if .Values.global_config.imagePullSecret.enabled }}
+      imagePullSecrets:
+        - name: "{{ .Values.global_config.imagePullSecret.name }}"
+      {{- end }}
+      volumes:
+        - name: ue-cmap
+          configMap:
+            name: ue-cmap
+      nodeSelector:
+        {{- .Values.ue.node_selector | toYaml | nindent 8 }}
