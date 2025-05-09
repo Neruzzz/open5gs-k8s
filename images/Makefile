@@ -1,4 +1,4 @@
-PREFIX = registry.gitlab.bsc.es/ppc/software/open5gs
+PREFIX = registry.gitlab.bsc.es/ppc/software/open5gs-k8s
 OPEN5GS_TAG = open5gs
 O5GSVERSION = 2.6.6
 UERANSIM_TAG = ueransim

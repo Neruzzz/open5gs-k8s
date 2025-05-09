@@ -1,107 +1,151 @@
-# Open5GS-Kubernetes
+# 🌌 Open5GS-K8s Helm Chart
 
-## 📌 Project Description
-This project is a **follow-up** of my master's thesis, where we are exploring whether deploying **User Plane Functions (UPFs) at the Edge** can be beneficial for **latency-sensitive applications**.
+This project provides a Helm-based deployment for **Open5GS** in Kubernetes, targeting a distributed architecture with **Cloud** and **Edge** clusters.
 
-Currently, the network runs with **UERANSIM** as an emulator for the gNB and UEs, but the goal is to migrate to **real hardware** using:
-- **Amarisoft** as the gNB
-- **Quectel modems and Samsung phones** as UEs
+Currently, only the **Cloud deployment** has been functionally tested. Multi-cluster communication has **not yet been validated**, but the project is designed with this future capability in mind.
 
-The system already works with **Docker Compose** in an environment where everything is within the same rack, but this project takes it further by deploying it in a **real OVH Cloud** to evaluate performance in a distributed setup.
-
-In the future, the goal is to **automate the network** based on real-time load, traffic, and application needs.
+> ℹ️ By default, a simulated gNB (UERANSIM) is also deployed in the cloud. You can **disable it** in `values.yaml` if you only want to run the 5G Core.
 
 ---
 
 ## 📂 Project Structure
 
-The project is organized into **two main Helm Charts** within the same repository:
+* `charts/cloud/` and `charts/edge/`:
+
+  * Contains Helm charts for deploying Open5GS components to the **cloud** and **edge** respectively.
+  * Inside each chart:
+
+    * `templates/`: All YAML Kubernetes manifests.
+
+      * Files ending in `-cmap.yaml` are **ConfigMaps** containing configuration for each Open5GS service.
+      * Files ending in `-depl.yaml` are **Deployment manifests** to launch services as Kubernetes pods.
+
+* `images/`:
+
+  * Dockerfiles for building container images:
+
+    * `open5gs/`: Base Open5GS network functions (AMF, SMF, etc.).
+    * `ueransim/`: Simulated gNB and UE.
+    * `webui/`: Open5GS Web UI.
+
+* `Makefile`:
+
+  * Automates building and pushing images to a container registry.
+
+---
+
+## 💡 Open5GS Components Overview
+
+| Component | Role                                                 |
+| --------- | ---------------------------------------------------- |
+| AMF       | Manages UE registration and control plane signaling. |
+| SMF       | Handles session setup and routes data via UPF.       |
+| UPF       | Responsible for forwarding user data packets.        |
+| AUSF      | Performs authentication with UDM.                    |
+| UDM       | Stores and manages subscriber data.                  |
+| UDR       | Backend data storage for UDM.                        |
+| NSSF      | Decides which network slice to use.                  |
+| NRF       | Acts as service discovery for network functions.     |
+| BSF       | Authenticates devices and exposes credentials.       |
+| PCF       | Manages policy rules for subscribers and flows.      |
+
+**Extra Components:**
+
+* `webui`: A graphical interface to register UEs (subscribers) into the system.
+* `ueransim`: A simulator for User Equipment (UE) and gNB to emulate end-to-end 5G traffic and registration flows.
+
+---
+
+## 🔧 Build and Push Docker Images
+
+To build and push Docker images, use the provided `Makefile`.
+
+Edit the `PREFIX` variable to match your container registry:
+
+```makefile
+PREFIX = registry.gitlab.bsc.es/ppc/software/open5gs-k8s
+```
+
+Then run:
+
+```bash
+make
+```
+
+This will build and push:
+
+* `open5gs` image tagged with Open5GS version (default: 2.6.6)
+* `webui` image tagged as `latest`
+* `ueransim` image tagged with version (default: 3.2.6)
+
+> 💡 You may also use `make no-cache` if you want to rebuild everything from scratch.
+
+---
+
+## 🚀 Deploying with Helm
+
+### 1. Install Helm
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+```
+
+### 2. Access Your Kubernetes Cluster
+
+Make sure you have the correct kubeconfig set:
+
+```bash
+kubectl config use-context <your-cluster>
+```
+
+### 3. Deploy Open5GS (Cloud)
+
+```bash
+cd charts/cloud
+helm install open5gs .
+```
+
+Once deployed, you can verify everything is running:
+
+```bash
+kubectl get pods
+```
+
+Expected output:
 
 ```
-Open5GS-KUBERNETES/
-│── charts/
-│   ├── cloud/       # Core 5G in the Cloud (Open5GS Core)
-│   │   ├── templates/
-│   │   │   ├── amf-depl.yaml
-│   │   │   ├── smf-depl.yaml
-│   │   │   ├── upf-depl.yaml
-│   │   │   ├── webui-depl.yaml
-│   │   │   ├── configmap.yaml
-│   │   │   ├── _helpers.tpl
-│   │   ├── values.yaml
-│   │   ├── Chart.yaml
-│   │   ├── README.md
-│   ├── edge/        # Edge Deployment (gNB, UE, UPF, SMF)
-│   │   ├── templates/
-│   │   │   ├── gnb-depl.yaml
-│   │   │   ├── ue-depl.yaml
-│   │   │   ├── smf-depl.yaml
-│   │   │   ├── upf-depl.yaml
-│   │   │   ├── configmap.yaml
-│   │   ├── values.yaml
-│   │   ├── Chart.yaml
-│   │   ├── README.md
-│── README.md        # This document
-│── .gitignore       # Excluded files from repo
+NAME                            READY   STATUS    RESTARTS   AGE
+amf-depl-5589bdbb9c-npwv8       1/1     Running   0          90s
+ausf-depl-6cb995dcc6-tpds2      1/1     Running   0          90s
+bsf-depl-5c4f59878f-88kws       1/1     Running   0          90s
+gnb-depl-59d9748c6-txk7j        1/1     Running   0          90s
+nrf-depl-75457b574d-xprvp       1/1     Running   0          89s
+nssf-depl-79b45f998b-7vpj4      1/1     Running   0          90s
+open5gs-mongodb-0               1/1     Running   0          90s
+open5gs-webui-56db4959d-nqxfx   1/1     Running   0          90s
+pcf-depl-b78947879-g4drm        1/1     Running   2          90s
+smf-depl-65ccb87db7-5j6hd       1/1     Running   0          90s
+udm-depl-74bc7b64f6-bc9lm       1/1     Running   0          90s
+udr-depl-65c887645c-xh5b7       1/1     Running   1          90s
+ue-depl-667df78666-7kzrp        1/1     Running   0          90s
+upf-depl-cbd96f675-dl6l9        1/1     Running   0          90s
+```
+
+You can check logs of any pod. For example:
+
+```bash
+kubectl logs amf-depl-5589bdbb9c-npwv8
+```
+
+Example showing gNB connection to AMF:
+
+```
+[amf] INFO: gNB-N2 accepted[192.168.58.122]:51170 in ng-path module
+[amf] INFO: [Added] Number of gNBs is now 1
 ```
 
 ---
 
-## 🚀 What Does This Project Deploy?
+## 🔖 License
 
-### 🔹 **Cloud (OVH) - charts/cloud/**
-- **AMF** (Access and Mobility Management Function)
-- **SMF** (Session Management Function)
-- **UPF** (User Plane Function)
-- **Web UI** for Open5GS
-- **MongoDB** for subscriber storage
-
-### 🔹 **Edge (Local Cluster) - charts/edge/**
-- **gNB** (UERANSIM, soon Amarisoft)
-- **UE** (UERANSIM, soon Quectel modems and Samsung phones)
-- **Edge-specific UPF**
-- **SMF** to manage sessions at the Edge
-
-Each component is modularized within **separate Helm Charts**, allowing Cloud and Edge to be deployed separately or together.
-
----
-
-## 🔄 Deployment and Usage
-
-### **1️⃣ Deploy Core in the Cloud**
-```sh
-helm install open5gs-cloud charts/cloud --namespace open5gs-cloud --create-namespace
-```
-
-### **2️⃣ Deploy Edge in Local Cluster**
-```sh
-helm install open5gs-edge charts/edge --namespace open5gs-edge --create-namespace
-```
-
-### **3️⃣ Deploy Both (Cloud + Edge)**
-```sh
-helm install open5gs charts/ --set cloud.enabled=true --set edge.enabled=true
-```
-
----
-
-## 📌 Current Status and Next Steps
-✅ **Current Status:**
-- The network **works with UERANSIM**, allowing real traffic testing between the Core in OVH and a local Edge cluster.
-- Cloud and Edge deployments are **separated**, ensuring modularity and scalability.
-
-🚀 **Next Steps:**
-- **Migration to Amarisoft** to use a real gNB.
-- **Integration with Quectel modems and Samsung phones** as real UEs.
-- **Optimization of traffic at the Edge UPF** to see if it improves latency-sensitive applications.
-- **Automating the network** to dynamically manage resources based on load.
-
----
-
-## 📄 References
-- [Open5GS](https://open5gs.org/)
-- [UERANSIM](https://github.com/aligungr/UERANSIM)
-- [Helm](https://helm.sh/)
-
-If you have any questions or suggestions, feel free to open an issue or reach out! 🚀
-
+This project is licensed under the MIT License. See the [`LICENSE`](LICENSE) file for details.
